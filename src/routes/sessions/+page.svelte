@@ -5,9 +5,15 @@
 
     let { data }: { data: PageData } = $props();
 
+    const formatNumber = new Intl.NumberFormat('en-BE');
+
+    const cards = $derived([
+        { label: 'Total sessions', value: data.stats.totalSessions },
+        { label: 'Total plays', value: data.stats.totalPlays }
+    ]);
+
     function formatDate(value: string) {
         const [year, month, day] = value.split('-');
-
         return `${day}/${month}/${year}`;
     }
 
@@ -18,7 +24,7 @@
     function formatDuration(start: string | null, end: string | null) {
         if (!start || !end) return '-';
 
-        // These strings contain local wall-clock timestamps.
+        // Span between the first and last recorded track starts.
         const toMinutes = (value: string) => {
             const [date, time] = value.split('T');
             const [year, month, day] = date.split('-').map(Number);
@@ -28,7 +34,8 @@
         };
 
         const minutes = toMinutes(end) - toMinutes(start);
-        if (minutes < 0) return '-';
+
+        if (!Number.isFinite(minutes) || minutes < 0) return '-';
 
         const hours = Math.floor(minutes / 60);
         const remainder = minutes % 60;
@@ -39,102 +46,177 @@
     }
 
     function navigate(page: number) {
+        if (page < 1 || page > data.totalPages) return;
+
         goto(`/sessions?page=${page}`);
     }
 </script>
 
-<div class="space-y-8">
-    <header>
-        <h1 class="text-3xl font-semibold">DJ Sessions</h1>
-        <p class="mt-2 text-slate-400">
-            Explore your VirtualDJ mixing history
-        </p>
+<svelte:head>
+    <title>DJ Sessions | VirtualDJ Insights</title>
+</svelte:head>
+
+<div class="flex h-full min-h-0 flex-col gap-3.5">
+
+    <!-- Header -->
+    <header class="flex shrink-0 items-center justify-between">
+        <div>
+            <h1 class="text-[23px] font-semibold tracking-tight text-slate-100">
+                DJ Sessions
+            </h1>
+
+            <p class="mt-0.5 text-xs text-slate-400">
+                Explore your VirtualDJ mixing history
+            </p>
+        </div>
     </header>
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div class="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
-            <p class="text-sm text-slate-400">Total Sessions</p>
-            <p class="mt-2 text-3xl font-semibold">
-                {data.stats.totalSessions.toLocaleString()}
-            </p>
-        </div>
-
-        <div class="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
-            <p class="text-sm text-slate-400">Total Plays</p>
-            <p class="mt-2 text-3xl font-semibold">
-                {data.stats.totalPlays.toLocaleString()}
-            </p>
-        </div>
-    </div>
-
-    <section class="overflow-hidden rounded-xl border border-slate-800">
-        <div class="border-b border-slate-800 p-5">
-            <h2 class="font-semibold">All Sessions</h2>
-        </div>
-
-        <div class="divide-y divide-slate-800">
-            {#each data.sessions as session (session.id)}
-                <a
-                    href={`/sessions/${session.id}`}
-                    class="flex items-center justify-between gap-4 p-5 transition hover:bg-slate-800/40"
-                >
-                    <div class="flex items-center gap-4">
-                        <div class="rounded-xl bg-slate-800 p-3 text-xl">
-                            ♫
-                        </div>
-
-                        <div>
-                            <p class="font-medium">
-                                {formatDate(session.sessionDate)}
-                            </p>
-                            <p class="mt-1 text-sm text-slate-400">
-                                {formatTime(session.startedAt)}
-                                –
-                                {formatTime(session.endedAt)}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="text-right">
-                        <p class="font-medium">
-                            {session.trackCount} tracks
-                        </p>
-
-                        <p class="mt-1 text-xs text-slate-400">
-                            {formatDuration(session.startedAt, session.endedAt)}
-                            span
-                        </p>
-                    </div>
-                </a>
-            {:else}
-                <p class="p-10 text-center text-slate-400">
-                    No sessions found. Import your VirtualDJ history first.
+    <!-- KPIs -->
+    <div class="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2">
+        {#each cards as card}
+            <div class="glass-card kpi-card">
+                <p class="kpi-title">
+                    {card.label}
                 </p>
-            {/each}
-        </div>
-    </section>
 
-    <div class="flex items-center justify-between">
-        <span class="text-sm text-slate-400">
-            Page {data.page} of {data.totalPages}
-        </span>
-
-        <div class="flex gap-2">
-            <button
-                onclick={() => navigate(data.page - 1)}
-                disabled={data.page <= 1}
-                class="rounded-lg border border-slate-700 px-4 py-2 disabled:opacity-30"
-            >
-                Previous
-            </button>
-
-            <button
-                onclick={() => navigate(data.page + 1)}
-                disabled={data.page >= data.totalPages}
-                class="rounded-lg border border-slate-700 px-4 py-2 disabled:opacity-30"
-            >
-                Next
-            </button>
-        </div>
+                <p class="kpi-value">
+                    {formatNumber.format(card.value)}
+                </p>
+            </div>
+        {/each}
     </div>
+
+    <!-- Sessions panel -->
+    <section class="overview-surface flex min-h-0 flex-1 flex-col p-4">
+
+        <!-- Panel header -->
+        <div class="mb-3 flex shrink-0 items-start justify-between gap-3">
+            <div>
+                <h2 class="panel-title">
+                    All sessions
+                </h2>
+
+                <p class="panel-description">
+                    Your recorded mixing sessions, newest first
+                </p>
+            </div>
+
+            <span class="shrink-0 text-[11px] text-slate-400">
+                {formatNumber.format(data.stats.totalSessions)} sessions
+            </span>
+        </div>
+
+        <!-- Scrollable session list -->
+        <div class="overview-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
+            <div class="flex flex-col gap-2">
+
+                {#each data.sessions as session (session.id)}
+                    <a
+                        href={`/sessions/${session.id}`}
+                        class="group flex items-center justify-between gap-4 rounded-xl border border-white/7 bg-white/2 px-4 py-3 transition-colors hover:border-sky-400/15 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                    >
+                        <!-- Session information -->
+                        <div class="flex min-w-0 items-center gap-3">
+
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sky-400/12 bg-sky-400/7 text-sky-300">
+                                <svg
+                                    width="19"
+                                    height="19"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.7"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M9 18V5l12-2v13" />
+                                    <circle cx="6" cy="18" r="3" />
+                                    <circle cx="18" cy="16" r="3" />
+                                </svg>
+                            </div>
+
+                            <div class="min-w-0">
+                                <p class="text-[13px] font-semibold text-slate-200 transition-colors group-hover:text-white">
+                                    {formatDate(session.sessionDate)}
+                                </p>
+
+                                <p class="mt-1 text-[11px] text-slate-400">
+                                    {formatTime(session.startedAt)}
+                                    –
+                                    {formatTime(session.endedAt)}
+
+                                    <span class="mx-1 text-slate-600">·</span>
+
+                                    {formatDuration(session.startedAt, session.endedAt)}
+                                    span
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Track count -->
+                        <div class="flex shrink-0 items-center gap-4">
+                            <div class="text-right">
+                                <p class="text-[13px] font-semibold text-slate-200">
+                                    {session.trackCount}
+                                </p>
+
+                                <p class="text-[10px] text-slate-500">
+                                    tracks
+                                </p>
+                            </div>
+
+                            <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="text-slate-600 transition-colors group-hover:text-sky-300"
+                                aria-hidden="true"
+                            >
+                                <path d="m9 18 6-6-6-6" />
+                            </svg>
+                        </div>
+                    </a>
+                {:else}
+                    <p class="py-12 text-center text-xs text-slate-400">
+                        No sessions recorded. Import your VirtualDJ history first.
+                    </p>
+                {/each}
+
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-3 flex shrink-0 items-center justify-between gap-3 border-t border-white/7 pt-3">
+            <p class="text-[11px] text-slate-400">
+                Page {data.page} of {data.totalPages}
+            </p>
+
+            <div class="flex gap-2">
+                <button
+                    type="button"
+                    onclick={() => navigate(data.page - 1)}
+                    disabled={data.page <= 1}
+                    class="cursor-pointer rounded-lg border border-white/10 bg-white/3 px-3 py-2 text-[11px] font-medium text-slate-300 transition-colors hover:bg-white/7 disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                    Previous
+                </button>
+
+                <button
+                    type="button"
+                    onclick={() => navigate(data.page + 1)}
+                    disabled={data.page >= data.totalPages}
+                    class="cursor-pointer rounded-lg border border-white/10 bg-white/3 px-3 py-2 text-[11px] font-medium text-slate-300 transition-colors hover:bg-white/7 disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                    Next
+                </button>
+            </div>
+        </div>
+
+    </section>
 </div>

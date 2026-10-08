@@ -1,18 +1,34 @@
+
 @import 'tailwindcss';
 
 :root {
     color-scheme: dark;
+
+    --app-bg: #060c18;
+    --app-text: #f1f5f9;
+    --app-muted: #94a3b8;
+
+    --glass-surface: rgba(15, 23, 42, 0.36);
+    --glass-surface-soft: rgba(15, 23, 42, 0.26);
+    --glass-border: rgba(148, 163, 184, 0.05);
+    --glass-border-hover: rgba(148, 163, 184, 0.20);
+
+    --accent: #38bdf8;
+    --accent-light: #7dd3fc;
+
+    --radius-card: 4px;
 }
+
+/* ==========================================================
+   GLOBAL STYLES
+   ========================================================== */
 
 html,
 body {
     margin: 0;
     min-height: 100%;
-    background:
-        radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 26%),
-        radial-gradient(circle at top right, rgba(99, 102, 241, 0.06), transparent 22%),
-        linear-gradient(180deg, #020617 0%, #030b1a 100%);
-    color: #f8fafc;
+    background-color: var(--app-bg);
+    color: var(--app-text);
     font-family:
         Inter,
         ui-sans-serif,
@@ -34,115 +50,235 @@ a {
     text-decoration: none;
 }
 
-/* ---------------------------------- */
-/* App shell */
-/* ---------------------------------- */
+/* ==========================================================
+   APPLICATION BACKGROUND
+   ========================================================== */
 
-.nav-link {
-    display: flex;
-    align-items: center;
-    border-radius: 0.85rem;
-    padding: 0.7rem 0.9rem;
-    color: #cbd5e1;
-    transition:
-        background-color 160ms ease,
-        color 160ms ease,
-        border-color 160ms ease,
-        box-shadow 160ms ease;
-    border: 1px solid transparent;
+.app-background {
+    position: relative;
+    isolation: isolate;
+    background:
+        radial-gradient(
+            ellipse at 12% 0%,
+            rgba(56, 189, 248, 0.075),
+            transparent 42%
+        ),
+        radial-gradient(
+            ellipse at 100% 80%,
+            rgba(99, 102, 241, 0.045),
+            transparent 40%
+        ),
+        linear-gradient(
+            145deg,
+            #080f1e 0%,
+            #060b16 55%,
+            #080f1c 100%
+        );
 }
 
-.nav-link:hover {
-    background: rgba(15, 23, 42, 0.42);
-    border-color: rgba(148, 163, 184, 0.10);
-    color: #ffffff;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
-}
+/* ==========================================================
+   GLASSMORPHISM
+   ========================================================== */
 
-/* ---------------------------------- */
-/* Scrollbars */
-/* ---------------------------------- */
-
-.overview-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(148, 163, 184, 0.28) transparent;
-}
-
-.overview-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-.overview-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.22);
-    border-radius: 9999px;
-}
-
-.overview-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-/* ---------------------------------- */
-/* Overview styling */
-/* ---------------------------------- */
-
-.overview-page {
-    --overview-surface: rgba(10, 18, 34, 0.52);
-    --overview-surface-strong: rgba(10, 18, 34, 0.64);
-}
-
-/* Main glass cards */
+.glass-card,
 .overview-surface {
     position: relative;
+    isolation: isolate;
     overflow: hidden;
+
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-card);
+    /* Opaque fallback */
+    background-color: #101827;
+
+    /* Translucent surface with a soft light reflection */
     background:
         linear-gradient(
             180deg,
-            rgba(255, 255, 255, 0.025) 0%,
-            rgba(255, 255, 255, 0.008) 100%
+            rgba(255, 255, 255, 0.01) 0%,
+            rgba(255, 255, 255, 0.005) 100%
         ),
-        var(--overview-surface);
-    backdrop-filter: blur(24px) saturate(120%);
-    -webkit-backdrop-filter: blur(24px) saturate(120%);
+        var(--glass-surface);
+
+    -webkit-backdrop-filter: blur(16px) saturate(115%);
+    backdrop-filter: blur(16px) saturate(115%);
+
+    /* Soft elevation and inner highlight */
+    box-shadow:
+        0 8px 28px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
-/* Soft top sheen */
+/* Fine light reflection along the upper edge */
+.glass-card::before,
 .overview-surface::before {
     content: '';
     position: absolute;
-    inset: 0 0 auto 0;
+    top: 0;
+    left: 0;
+    right: 0;
     height: 1px;
+
     background: linear-gradient(
         90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.09) 18%,
-        rgba(255, 255, 255, 0.05) 50%,
-        rgba(255, 255, 255, 0.09) 82%,
-        transparent 100%
+        transparent,
+        rgba(255, 255, 255, 0.09) 25%,
+        rgba(255, 255, 255, 0.045) 75%,
+        transparent
     );
+
     pointer-events: none;
+    z-index: 0;
 }
 
-/* Ultra subtle inner ambient glow */
+/* Very faint ambient tint */
+.glass-card::after,
 .overview-surface::after {
     content: '';
     position: absolute;
     inset: 0;
+
+    background: radial-gradient(
+        ellipse at 0% 0%,
+        rgba(56, 189, 248, 0.035),
+        transparent 55%
+    );
+
     pointer-events: none;
-    background:
-        radial-gradient(circle at top left, rgba(56, 189, 248, 0.045), transparent 30%);
-    opacity: 0.65;
+    z-index: 0;
 }
 
-/* Session list rows inside glass panel */
+/* Ensure card content stays above decorative effects */
+.glass-card > *,
+.overview-surface > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Secondary glass surfaces */
+.glass-soft {
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.018),
+            rgba(255, 255, 255, 0.004)
+        ),
+        var(--glass-surface-soft);
+
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    border-radius: 10px;
+
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+/* ----------------------------------
+   KPI components
+   ---------------------------------- */
+
+.kpi-card {
+    padding: 12px 16px;
+}
+
+.kpi-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+
+.kpi-value {
+    margin-top: 6px;
+    font-size: 27px;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: #f1f5f9;
+    font-variant-numeric: tabular-nums;
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    padding: 16px;
+}
+
+.panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #f1f5f9;
+    text-transform: uppercase;
+}
+
+.panel-description {
+    margin-top: 2px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #94a3b8;
+}
+
+/* ==========================================================
+   SIDEBAR
+   ========================================================== */
+
+.app-sidebar {
+    background: rgba(7, 13, 27, 0.48);
+    border-right: 1px solid rgba(148, 163, 184, 0.10);
+
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 10px 12px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 500;
+
+    transition:
+        color 160ms ease,
+        background-color 160ms ease,
+        border-color 160ms ease;
+}
+
+.nav-link:hover {
+    background: rgba(148, 163, 184, 0.07);
+    color: #f1f5f9;
+}
+
+.nav-link-active {
+    background: rgba(56, 189, 248, 0.09);
+    border-color: rgba(56, 189, 248, 0.13);
+    color: #7dd3fc;
+}
+
+.nav-link-active:hover {
+    background: rgba(56, 189, 248, 0.12);
+    color: #7dd3fc;
+}
+
+/* ==========================================================
+   SESSION ROWS
+   ========================================================== */
+
 .session-row {
+    display: flex;
     border: 1px solid transparent;
     background: rgba(255, 255, 255, 0.018);
+
     transition:
         background-color 160ms ease,
-        border-color 160ms ease,
-        box-shadow 160ms ease,
-        transform 160ms ease;
+        border-color 160ms ease;
 }
 
 .session-row + .session-row {
@@ -150,32 +286,95 @@ a {
 }
 
 .session-row:hover {
-    background: rgba(255, 255, 255, 0.032);
+    background: rgba(255, 255, 255, 0.04);
     border-color: rgba(148, 163, 184, 0.10);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.02),
-        0 4px 14px rgba(2, 6, 23, 0.10);
 }
 
-/* Optional smaller surfaces if needed elsewhere */
-.glass-soft {
-    background:
-        linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.02) 0%,
-            rgba(255, 255, 255, 0.005) 100%
-        ),
-        rgba(10, 18, 34, 0.42);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow:
-        0 8px 24px rgba(2, 6, 23, 0.12),
-        inset 0 1px 0 rgba(255, 255, 255, 0.018);
+/* ==========================================================
+   SCROLLBARS
+   ========================================================== */
+
+.overview-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.22) transparent;
 }
 
-/* ---------------------------------- */
-/* Responsive fallback */
-/* ---------------------------------- */
+.overview-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.overview-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.20);
+    border-radius: 999px;
+}
+
+.overview-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* ==========================================================
+   ACCESSIBILITY
+   ========================================================== */
+
+.nav-link:focus-visible,
+.session-row:focus-visible {
+    outline: 2px solid var(--accent-light);
+    outline-offset: 2px;
+}
+
+@supports not (
+    (backdrop-filter: blur(1px)) or
+    (-webkit-backdrop-filter: blur(1px))
+) {
+    .glass-card,
+    .overview-surface,
+    .glass-soft {
+        background: #101827;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .glass-card,
+    .overview-surface,
+    .glass-soft,
+    .app-sidebar {
+        background: #101827;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+
+@media (forced-colors: active) {
+    .glass-card,
+    .overview-surface,
+    .glass-soft {
+        background: Canvas;
+        color: CanvasText;
+        border-color: CanvasText;
+        box-shadow: none;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+
+    .glass-card::before,
+    .glass-card::after,
+    .overview-surface::before,
+    .overview-surface::after {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-link,
+    .session-row {
+        transition: none;
+    }
+}
+
+/* ==========================================================
+   RESPONSIVENESS
+   ========================================================== */
 
 @media (max-width: 1279px), (max-height: 760px) {
     .overview-page {
@@ -183,12 +382,12 @@ a {
         min-height: 100%;
     }
 
-    .overview-page > .grid:last-child {
+    .overview-dashboard-grid {
         grid-template-rows: auto;
     }
 
-    .overview-page > .grid:last-child > section {
-        min-height: 270px;
+    .overview-dashboard-grid > section {
+        min-height: 275px;
     }
 
     body {

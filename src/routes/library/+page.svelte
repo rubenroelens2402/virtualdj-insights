@@ -1,149 +1,248 @@
+
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import type { PageData } from './$types.js';
+    import { goto } from '$app/navigation';
+    import type { PageData } from './$types.js';
 
-	let { data }: { data: PageData } = $props();
+    let { data }: { data: PageData } = $props();
 
-	let search = $state('');
+    let search = $state('');
 
-	$effect(() => {
-		search = data.search ?? '';
-	});
+    const formatNumber = new Intl.NumberFormat('en-BE');
 
-	function applySearch(event: SubmitEvent) {
-		event.preventDefault();
+    const cards = $derived([
+        { label: 'Total tracks', value: data.stats.totalTracks },
+        { label: 'Played tracks', value: data.stats.playedTracks },
+        { label: 'Recorded plays', value: data.stats.totalPlays },
+        { label: 'Average BPM', value: Math.round(data.stats.averageBpm ?? 0) }
+    ]);
 
-		const params = new URLSearchParams();
+    $effect(() => {
+        search = data.search ?? '';
+    });
 
-		if (search.trim()) {
-			params.set('search', search.trim());
-		}
+    function applySearch(event: SubmitEvent) {
+        event.preventDefault();
 
-		goto(`/library?${params.toString()}`);
-	}
+        const params = new URLSearchParams();
 
-	function navigateToPage(page: number) {
-		const params = new URLSearchParams();
+        if (search.trim()) {
+            params.set('search', search.trim());
+        }
 
-		if (data.search) params.set('search', data.search);
-		params.set('page', String(page));
+        goto(`/library${params.size ? `?${params.toString()}` : ''}`);
+    }
 
-		goto(`/library?${params.toString()}`);
-	}
+    function navigateToPage(page: number) {
+        if (page < 1 || page > data.totalPages) return;
 
-	function formatDuration(seconds: number | null) {
-		if (seconds === null) return '-';
+        const params = new URLSearchParams();
 
-		const minutes = Math.floor(seconds / 60);
-		const remainder = Math.floor(seconds % 60);
+        if (data.search) {
+            params.set('search', data.search);
+        }
 
-		return `${minutes}:${String(remainder).padStart(2, '0')}`;
-	}
+        params.set('page', String(page));
+
+        goto(`/library?${params.toString()}`);
+    }
+
+    function formatDuration(seconds: number | null) {
+        if (seconds === null || !Number.isFinite(seconds)) return '-';
+
+        const minutes = Math.floor(seconds / 60);
+        const remainder = Math.floor(seconds % 60);
+
+        return `${minutes}:${String(remainder).padStart(2, '0')}`;
+    }
 </script>
 
-<div class="space-y-8">
-	<header>
-		<h1 class="text-3xl font-semibold">Music Library</h1>
-		<p class="mt-2 text-slate-400">Explore your VirtualDJ collection</p>
-	</header>
+<svelte:head>
+    <title>Music Library | VirtualDJ Insights</title>
+</svelte:head>
 
-	<!-- Statistics -->
-	<div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-		{#each [{ label: 'Total Tracks', value: data.stats.totalTracks }, { label: 'Played Tracks', value: data.stats.playedTracks }, { label: 'Recorded Plays', value: data.stats.totalPlays }, { label: 'Average BPM', value: Math.round(data.stats.averageBpm ?? 0) }] as stat}
-			<div class="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
-				<p class="text-sm text-slate-400">{stat.label}</p>
-				<p class="mt-2 text-3xl font-semibold">
-					{stat.value.toLocaleString()}
-				</p>
-			</div>
-		{/each}
-	</div>
+<div class="flex h-full min-h-0 flex-col gap-3.5">
 
-	<!-- Search -->
-	<form onsubmit={applySearch} class="flex gap-3">
-		<input
-			type="search"
-			bind:value={search}
-			placeholder="Search tracks, artists, filenames..."
-			class="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-blue-500"
-		/>
+    <!-- Header -->
+    <header class="flex shrink-0 items-center justify-between">
+        <div>
+            <h1 class="text-[23px] font-semibold tracking-tight text-slate-100">
+                Music Library
+            </h1>
 
-		<button type="submit" class="rounded-lg bg-blue-600 px-6 py-3 font-medium hover:bg-blue-500">
-			Search
-		</button>
-	</form>
+            <p class="mt-0.5 text-xs text-slate-400">
+                Explore your VirtualDJ collection
+            </p>
+        </div>
+    </header>
 
-	<!-- Table -->
-	<div class="overflow-hidden rounded-xl border border-slate-800">
-		<div class="overflow-x-auto">
-			<table class="w-full text-left text-sm">
-				<thead class="bg-slate-900 text-slate-400">
-					<tr>
-						<th class="p-4">Artist</th>
-						<th class="p-4">Track</th>
-						<th class="p-4">Genre</th>
-						<th class="p-4">BPM</th>
-						<th class="p-4">Key</th>
-						<th class="p-4">Duration</th>
-						<th class="p-4 text-right">Plays</th>
-					</tr>
-				</thead>
+    <!-- KPIs -->
+    <div class="grid shrink-0 grid-cols-2 gap-3 xl:grid-cols-4">
+        {#each cards as card}
+            <div class="glass-card kpi-card">
+                <p class="kpi-title">
+                    {card.label}
+                </p>
 
-				<tbody>
-					{#each data.tracks as track (track.id)}
-						<tr class="border-t border-slate-800 hover:bg-slate-800/40">
-							<td class="p-4 font-medium">
-								{track.artist ?? '-'}
-							</td>
-							<td class="p-4">{track.title ?? '-'}</td>
-							<td class="p-4 text-slate-400">
-								{track.genre ?? '-'}
-							</td>
-							<td class="p-4">
-								{track.bpm?.toFixed(1) ?? '-'}
-							</td>
-							<td class="p-4">
-								{track.musicalKey ?? '-'}
-							</td>
-							<td class="p-4 text-slate-400">
-								{formatDuration(track.durationSeconds)}
-							</td>
-							<td class="p-4 text-right">
-								{track.playCount}
-							</td>
-						</tr>
-					{:else}
-						<tr>
-							<td colspan="7" class="p-10 text-center text-slate-400"> No tracks found. </td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
+                <p class="kpi-value">
+                    {formatNumber.format(card.value)}
+                </p>
+            </div>
+        {/each}
+    </div>
 
-		<!-- Pagination -->
-		<div class="flex items-center justify-between border-t border-slate-800 p-4">
-			<span class="text-sm text-slate-400">
-				{data.total.toLocaleString()} matching tracks · Page {data.page} of {data.totalPages}
-			</span>
+    <!-- Library panel -->
+    <section class="overview-surface flex min-h-0 flex-1 flex-col p-4">
 
-			<div class="flex gap-2">
-				<button
-					onclick={() => navigateToPage(data.page - 1)}
-					disabled={data.page <= 1}
-					class="rounded-lg border border-slate-700 px-4 py-2 disabled:opacity-30"
-				>
-					Previous
-				</button>
+        <!-- Panel header -->
+        <div class="mb-3 flex shrink-0 items-start justify-between gap-3">
+            <div>
+                <h2 class="panel-title">
+                    Music library
+                </h2>
 
-				<button
-					onclick={() => navigateToPage(data.page + 1)}
-					disabled={data.page >= data.totalPages}
-					class="rounded-lg border border-slate-700 px-4 py-2 disabled:opacity-30"
-				>
-					Next
-				</button>
-			</div>
-		</div>
-	</div>
+                <p class="panel-description">
+                    Browse and search your tracks
+                </p>
+            </div>
+
+            <span class="shrink-0 text-[11px] text-slate-400">
+                {formatNumber.format(data.total)} tracks
+            </span>
+        </div>
+
+        <!-- Search -->
+        <form onsubmit={applySearch} class="mb-3 flex shrink-0 gap-2" role="search">
+            <input
+                type="search"
+                bind:value={search}
+                aria-label="Search music library"
+                placeholder="Search tracks, artists, filenames..."
+                class="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/4 px-3 py-2 text-xs text-slate-100 outline-none transition-colors placeholder:text-slate-500 focus:border-sky-400/40"
+            />
+
+            <button
+                type="submit"
+                class="cursor-pointer rounded-lg border border-sky-400/20 bg-sky-400/10 px-4 py-2 text-xs font-medium text-sky-300 transition-colors hover:bg-sky-400/15"
+            >
+                Search
+            </button>
+        </form>
+
+        <!-- Scrollable table -->
+        <div class="overview-scrollbar min-h-0 min-w-0 flex-1 overflow-auto rounded-lg border border-white/6">
+            <table class="w-full min-w-185 border-separate border-spacing-0 text-left text-[12px]">
+
+                <thead>
+                    <tr class="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+                        <th scope="col" class="sticky top-0 z-10 border-b border-white/8 bg-[#172235] px-3 py-3">
+                            Artist
+                        </th>
+
+                        <th scope="col" class="sticky top-0 z-10 border-b border-white/8 bg-[#172235] px-3 py-3">
+                            Track
+                        </th>
+
+                        <th scope="col" class="sticky top-0 z-10 border-b border-white/8 bg-[#172235] px-3 py-3">
+                            Genre
+                        </th>
+
+                        <th scope="col" class="sticky top-0 z-10 border-b border-white/8 bg-[#172235] px-3 py-3">
+                            BPM
+                        </th>
+
+                        <th scope="col" class="sticky top-0 z-10 border-b border-white/8 bg-[#172235] px-3 py-3">
+                            Key
+                        </th>
+
+                        <th scope="col" class="sticky top-0 z-10 border-b border-white/8 bg-[#172235] px-3 py-3">
+                            Duration
+                        </th>
+
+                        <th scope="col" class="sticky top-0 z-10 border-b border-white/8 bg-[#172235] px-3 py-3 text-right">
+                            Plays
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {#each data.tracks as track (track.id)}
+                        <tr class="transition-colors hover:bg-white/4">
+
+                            <td class="max-w-56 border-b border-white/5 px-3 py-2.5 font-medium text-slate-200">
+                                <span class="block truncate" title={track.artist ?? ''}>
+                                    {track.artist ?? '-'}
+                                </span>
+                            </td>
+
+                            <td class="max-w-72 border-b border-white/5 px-3 py-2.5 text-slate-100">
+                                <span class="block truncate" title={track.title ?? ''}>
+                                    {track.title ?? '-'}
+                                </span>
+                            </td>
+
+                            <td class="max-w-40 border-b border-white/5 px-3 py-2.5 text-slate-400">
+                                <span class="block truncate" title={track.genre ?? ''}>
+                                    {track.genre ?? '-'}
+                                </span>
+                            </td>
+
+                            <td class="border-b border-white/5 px-3 py-2.5 font-mono text-[11px] whitespace-nowrap text-slate-300">
+                                {track.bpm?.toFixed(1) ?? '-'}
+                            </td>
+
+                            <td class="border-b border-white/5 px-3 py-2.5 whitespace-nowrap text-slate-300">
+                                {track.musicalKey ?? '-'}
+                            </td>
+
+                            <td class="border-b border-white/5 px-3 py-2.5 font-mono text-[11px] whitespace-nowrap text-slate-400">
+                                {formatDuration(track.durationSeconds)}
+                            </td>
+
+                            <td class="border-b border-white/5 px-3 py-2.5 text-right font-mono text-[11px] text-slate-300">
+                                {track.playCount}
+                            </td>
+
+                        </tr>
+                    {:else}
+                        <tr>
+                            <td colspan="7" class="px-4 py-12 text-center text-xs text-slate-400">
+                                No tracks found. Try another search or synchronize your library.
+                            </td>
+                        </tr>
+                    {/each}
+                </tbody>
+
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-3 flex shrink-0 items-center justify-between gap-3">
+            <p class="text-[11px] text-slate-400">
+                {formatNumber.format(data.total)} matching tracks
+                <span class="mx-1.5 text-slate-600">·</span>
+                Page {data.page} of {data.totalPages}
+            </p>
+
+            <div class="flex gap-2">
+                <button
+                    type="button"
+                    onclick={() => navigateToPage(data.page - 1)}
+                    disabled={data.page <= 1}
+                    class="cursor-pointer rounded-lg border border-white/10 bg-white/3 px-3 py-2 text-[11px] font-medium text-slate-300 transition-colors hover:bg-white/7 disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                    Previous
+                </button>
+
+                <button
+                    type="button"
+                    onclick={() => navigateToPage(data.page + 1)}
+                    disabled={data.page >= data.totalPages}
+                    class="cursor-pointer rounded-lg border border-white/10 bg-white/3 px-3 py-2 text-[11px] font-medium text-slate-300 transition-colors hover:bg-white/7 disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                    Next
+                </button>
+            </div>
+        </div>
+
+    </section>
 </div>

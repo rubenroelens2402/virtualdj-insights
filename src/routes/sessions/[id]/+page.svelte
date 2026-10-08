@@ -4,8 +4,31 @@
 
     let { data }: { data: PageData } = $props();
 
-    function formatTime(value: string) {
-        return value.slice(11, 16);
+    const formatNumber = new Intl.NumberFormat('en-BE');
+
+    const cards = $derived([
+        {
+            label: 'Tracks played',
+            value: formatNumber.format(data.stats.totalTracks)
+        },
+        {
+            label: 'Unique artists',
+            value: formatNumber.format(data.stats.uniqueArtists)
+        },
+        {
+            label: 'Library matches',
+            value: formatNumber.format(data.stats.matchedTracks)
+        },
+        {
+            label: 'Average BPM',
+            value: data.stats.averageBpm === null
+                ? '-'
+                : data.stats.averageBpm.toFixed(1)
+        }
+    ]);
+
+    function formatTime(value: string | null) {
+        return value ? value.slice(11, 16) : '-';
     }
 
     function formatDate(value: string) {
@@ -14,113 +37,196 @@
     }
 </script>
 
-<div class="space-y-8">
+<svelte:head>
+    <title>
+        DJ Session {formatDate(data.session.sessionDate)} | VirtualDJ Insights
+    </title>
 
-    <!-- Navigation -->
-    <a
-        href="/sessions"
-        class="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white"
-    >
-        ← Back to Sessions
-    </a>
+    <meta
+        name="description"
+        content="Explore recorded tracks and statistics for a VirtualDJ session."
+    />
+</svelte:head>
 
-    <!-- Header -->
-    <header>
-        <p class="text-sm text-slate-400">DJ Session</p>
+<div class="flex h-full min-h-0 flex-col gap-3.5">
 
-        <h1 class="mt-2 text-3xl font-semibold">
-            {formatDate(data.session.sessionDate)}
-        </h1>
+    <!-- Navigation and page heading -->
+    <header class="flex shrink-0 items-center justify-between gap-4">
 
-        <p class="mt-2 text-slate-400">
-            {data.session.startedAt
-                ? formatTime(data.session.startedAt)
-                : '-'}
-            –
-            {data.session.endedAt
-                ? formatTime(data.session.endedAt)
-                : '-'}
-        </p>
+        <div class="min-w-0">
+            <h1 class="text-[23px] font-semibold tracking-tight text-slate-100">
+                {formatDate(data.session.sessionDate)}
+            </h1>
+
+            <p class="mt-0.5 text-xs text-slate-400">
+                DJ Session
+                <span class="mx-1.5 text-slate-600">·</span>
+                {formatTime(data.session.startedAt)}
+                –
+                {formatTime(data.session.endedAt)}
+            </p>
+        </div>
+
+        <a
+            href="/sessions"
+            class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/3 px-3 py-2 text-[11px] font-medium text-slate-300 transition-colors hover:border-white/15 hover:bg-white/7 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+        >
+            <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+            >
+                <path d="m15 18-6-6 6-6" />
+            </svg>
+
+            Back to sessions
+        </a>
     </header>
 
-    <!-- KPIs -->
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {#each [
-            { label: 'Tracks Played', value: data.stats.totalTracks },
-            { label: 'Unique Artists', value: data.stats.uniqueArtists },
-            { label: 'Library Matches', value: data.stats.matchedTracks },
-            {
-                label: 'Average BPM',
-                value: data.stats.averageBpm === null
-                    ? '-'
-                    : data.stats.averageBpm.toFixed(1)
-            }
-        ] as stat}
-            <div class="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
-                <p class="text-sm text-slate-400">{stat.label}</p>
-                <p class="mt-2 text-3xl font-semibold">
-                    {stat.value}
+    <!-- KPI cards -->
+    <div class="grid shrink-0 grid-cols-2 gap-3 xl:grid-cols-4">
+        {#each cards as card}
+            <div class="glass-card kpi-card">
+                <p class="kpi-title">
+                    {card.label}
+                </p>
+
+                <p class="kpi-value">
+                    {card.value}
                 </p>
             </div>
         {/each}
     </div>
 
-    <!-- Tracklist -->
-    <section class="overflow-hidden rounded-xl border border-slate-800">
+    <!-- Tracklist panel -->
+    <section class="overview-surface flex min-h-0 flex-1 flex-col p-4">
 
-        <div class="border-b border-slate-800 p-5">
-            <h2 class="font-semibold">Session Tracklist</h2>
-            <p class="mt-1 text-sm text-slate-400">
-                {data.tracklist.length} recorded plays
-            </p>
+        <!-- Panel header -->
+        <div class="mb-3 flex shrink-0 items-start justify-between gap-3">
+            <div>
+                <h2 class="panel-title">
+                    Session tracklist
+                </h2>
+
+                <p class="panel-description">
+                    Tracks played during this session, in chronological order
+                </p>
+            </div>
+
+            <span class="shrink-0 text-[11px] text-slate-400">
+                {formatNumber.format(data.tracklist.length)} recorded plays
+            </span>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
+        <!-- Scrollable table -->
+        <div class="overview-scrollbar min-h-0 min-w-0 flex-1 overflow-auto rounded-lg border border-white/6">
 
-                <thead class="bg-slate-900 text-slate-400">
-                    <tr>
-                        <th class="p-4">#</th>
-                        <th class="p-4">Time</th>
-                        <th class="p-4">Artist</th>
-                        <th class="p-4">Track</th>
-                        <th class="p-4">BPM</th>
-                        <th class="p-4">Key</th>
+            <table class="w-full min-w-145 border-separate border-spacing-0 text-left text-[12px]">
+
+                <thead>
+                    <tr class="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+
+                        <th
+                            scope="col"
+                            class="sticky top-0 z-10 w-12 border-b border-white/8 bg-[#172235] px-3 py-3"
+                        >
+                            #
+                        </th>
+
+                        <th
+                            scope="col"
+                            class="sticky top-0 z-10 w-20 border-b border-white/8 bg-[#172235] px-3 py-3"
+                        >
+                            Time
+                        </th>
+
+                        <th
+                            scope="col"
+                            class="sticky top-0 z-10 w-[28%] border-b border-white/8 bg-[#172235] px-3 py-3"
+                        >
+                            Artist
+                        </th>
+
+                        <th
+                            scope="col"
+                            class="sticky top-0 z-10 border-b border-white/8 bg-[#172235] px-3 py-3"
+                        >
+                            Track
+                        </th>
+
+                        <th
+                            scope="col"
+                            class="sticky top-0 z-10 w-20 border-b border-white/8 bg-[#172235] px-3 py-3"
+                        >
+                            BPM
+                        </th>
+
+                        <th
+                            scope="col"
+                            class="sticky top-0 z-10 w-20 border-b border-white/8 bg-[#172235] px-3 py-3"
+                        >
+                            Key
+                        </th>
                     </tr>
                 </thead>
 
                 <tbody>
                     {#each data.tracklist as track (track.id)}
-                        <tr class="border-t border-slate-800 hover:bg-slate-800/40">
+                        <tr class="transition-colors hover:bg-white/4">
 
-                            <td class="p-4 text-slate-500">
+                            <!-- Position -->
+                            <td class="border-b border-white/5 px-3 py-2.5 font-mono text-[11px] text-slate-500">
                                 {track.position + 1}
                             </td>
 
-                            <td class="p-4 font-mono text-slate-400">
+                            <!-- Played time -->
+                            <td class="border-b border-white/5 px-3 py-2.5 font-mono text-[11px] whitespace-nowrap text-slate-400">
                                 {formatTime(track.playedAt)}
                             </td>
 
-                            <td class="p-4">
-                                {track.artist ?? 'Unknown'}
+                            <!-- Artist -->
+                            <td class="max-w-64 border-b border-white/5 px-3 py-2.5 text-slate-300">
+                                <span
+                                    class="block truncate"
+                                    title={track.artist ?? ''}
+                                >
+                                    {track.artist ?? 'Unknown'}
+                                </span>
                             </td>
 
-                            <td class="p-4 font-medium">
-                                {track.title}
+                            <!-- Track title -->
+                            <td class="max-w-80 border-b border-white/5 px-3 py-2.5 font-medium text-slate-100">
+                                <span
+                                    class="block truncate"
+                                    title={track.title ?? ''}
+                                >
+                                    {track.title ?? 'Unknown track'}
+                                </span>
                             </td>
 
-                            <td class="p-4">
+                            <!-- BPM -->
+                            <td class="border-b border-white/5 px-3 py-2.5 font-mono text-[11px] whitespace-nowrap text-slate-300">
                                 {track.bpm?.toFixed(1) ?? '-'}
                             </td>
 
-                            <td class="p-4">
+                            <!-- Musical key -->
+                            <td class="border-b border-white/5 px-3 py-2.5 whitespace-nowrap text-slate-300">
                                 {track.musicalKey ?? '-'}
                             </td>
 
                         </tr>
                     {:else}
                         <tr>
-                            <td colspan="6" class="p-10 text-center text-slate-400">
+                            <td
+                                colspan="6"
+                                class="px-4 py-12 text-center text-xs text-slate-400"
+                            >
                                 This session has no recorded tracks.
                             </td>
                         </tr>
@@ -129,6 +235,7 @@
 
             </table>
         </div>
+
     </section>
 
 </div>
