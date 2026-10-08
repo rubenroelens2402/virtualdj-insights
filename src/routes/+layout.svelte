@@ -11,7 +11,8 @@
 		{ name: 'Overview', href: '/', icon: 'overview' },
 		{ name: 'Library', href: '/library', icon: 'library' },
 		{ name: 'History', href: '/history', icon: 'history' },
-		{ name: 'Sessions', href: '/sessions', icon: 'sessions' }
+		{ name: 'Sessions', href: '/sessions', icon: 'sessions' },
+		{ name: 'Harmonic Wheel', href: '/harmonic-wheel', icon: 'wheel' }
 	] as const;
 
 	let syncing = $state<SyncType | null>(null);
@@ -163,6 +164,23 @@
 								<path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
 								<path d="M3 3v5h5" />
 								<path d="M12 7v5l3 2" />
+							</svg>
+						{:else if item.icon === 'wheel'}
+							<svg
+								width="17"
+								height="17"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.7"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<circle cx="12" cy="12" r="9" />
+								<circle cx="12" cy="12" r="5.5" />
+								<circle cx="12" cy="12" r="2" />
+								<path d="M12 3v3.5M12 17.5V21M3 12h3.5M17.5 12H21" />
 							</svg>
 						{:else}
 							<svg
