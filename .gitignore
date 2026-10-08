@@ -1,0 +1,68 @@
+# ---------------------------------------
+# Dependencies
+# ---------------------------------------
+node_modules/
+.pnpm-store/
+
+# ---------------------------------------
+# SvelteKit / Vite
+# ---------------------------------------
+.svelte-kit/
+.vercel/
+.netlify/
+.vite/
+build/
+dist/
+
+# ---------------------------------------
+# Environment variables / secrets
+# ---------------------------------------
+.env
+.env.*
+!.env.example
+!.env.test.example
+
+# ---------------------------------------
+# SQLite database and local data
+# ---------------------------------------
+data/*
+!data/.gitkeep
+
+*.sqlite
+*.sqlite3
+*.db
+*.sqlite-shm
+*.sqlite-wal
+*.db-shm
+*.db-wal
+
+# ---------------------------------------
+# Logs / caches
+# ---------------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+coverage/
+.nyc_output/
+
+# ---------------------------------------
+# Editors
+# ---------------------------------------
+.idea/
+*.swp
+*.swo
+
+# ---------------------------------------
+# Local temporary files
+# ---------------------------------------
+tmp/
+temp/
+*.tmp
+
+# ---------------------------------------
+# Docker runtime overrides
+# ---------------------------------------
+docker-compose.override.yml
