@@ -1,13 +1,16 @@
 
 import { syncHistory } from '#lib/server/ingestion/sync-service.js';
+import { matchHistoryToLibrary } from '#lib/server/ingestion/track-matcher.ts';
 
 export async function POST() {
     try {
         const result = await syncHistory();
-
+        const matching = await matchHistoryToLibrary();
+        
         return Response.json({
             success: true,
-            ...result
+            ...result,
+            ...matching
         });
     } catch (error) {
         console.error('History sync failed:', error);
