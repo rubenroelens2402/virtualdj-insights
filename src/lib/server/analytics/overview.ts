@@ -4,7 +4,10 @@ import { tracks, plays, sessions } from '#lib/server/db/schema.js';
 import { count, sql, desc, eq } from 'drizzle-orm';
 
 export function getOverview() {
-    // 1. Music library statistics
+    // --------------------------------------------------
+    // Library statistics
+    // --------------------------------------------------
+
     const [library] = db
         .select({
             totalTracks: count(),
@@ -15,7 +18,10 @@ export function getOverview() {
         .from(tracks)
         .all();
 
-    // 2. History statistics
+    // --------------------------------------------------
+    // History and session statistics
+    // --------------------------------------------------
+
     const [history] = db
         .select({ totalPlays: count() })
         .from(plays)
@@ -26,20 +32,26 @@ export function getOverview() {
         .from(sessions)
         .all();
 
-    // 3. Monthly playing activity
-    const month = sql<string>`substr(${plays.playedAt}, 1, 7)`;
+    // --------------------------------------------------
+    // Daily activity for calendar heatmap
+    // --------------------------------------------------
 
-    const monthlyActivity = db
+    const day = sql<string>`substr(${plays.playedAt}, 1, 10)`;
+
+    const dailyActivity = db
         .select({
-            month,
+            date: day,
             total: count()
         })
         .from(plays)
-        .groupBy(month)
-        .orderBy(month)
+        .groupBy(day)
+        .orderBy(day)
         .all();
 
-    // 4. Top artists from history
+    // --------------------------------------------------
+    // Top artists
+    // --------------------------------------------------
+
     const topArtists = db
         .select({
             artist: plays.artist,
@@ -55,7 +67,10 @@ export function getOverview() {
         .limit(10)
         .all();
 
-    // 5. Playing activity by hour (00:00–23:59)
+    // --------------------------------------------------
+    // Playing activity by hour
+    // --------------------------------------------------
+
     const hour = sql<number>`
         cast(substr(${plays.playedAt}, 12, 2) as integer)
     `;
@@ -70,7 +85,10 @@ export function getOverview() {
         .orderBy(hour)
         .all();
 
-    // 6. Recently recorded sessions
+    // --------------------------------------------------
+    // Recent sessions
+    // --------------------------------------------------
+
     const recentSessions = db
         .select({
             id: sessions.id,
@@ -92,7 +110,7 @@ export function getOverview() {
             totalPlays: history?.totalPlays ?? 0,
             totalSessions: sessionStats?.totalSessions ?? 0
         },
-        monthlyActivity,
+        dailyActivity,
         topArtists,
         hourlyActivity,
         recentSessions
