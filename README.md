@@ -1,220 +1,195 @@
 # VirtualDJ Insights
 
-A lightweight, self-hosted analytics dashboard for exploring your VirtualDJ music library, playing history, and DJ sessions.
+A lightweight, locally hosted analytics dashboard for exploring your **VirtualDJ music library, playing history, DJ sessions, and harmonic mixing possibilities**.
 
-Built with **SvelteKit 5, TypeScript, SQLite, Drizzle ORM, Tailwind CSS, and Apache ECharts**.
+Built with **SvelteKit (Svelte 5), TypeScript, SQLite, Drizzle ORM, Tailwind CSS v4, and Apache ECharts**.
 
-VirtualDJ Insights transforms locally stored VirtualDJ data into an interactive analytics experience, helping you understand your music collection, discover listening and mixing patterns, and explore your DJ activity over time.
-
-Everything runs locally. No cloud infrastructure or external database service is required.
+VirtualDJ Insights turns data from your local VirtualDJ installation into a compact, interactive DJ analytics workspace. Your library and history are stored in a local SQLite database; no external database or cloud analytics service is required.
 
 ## Features
 
-### Overview Dashboard
+### Overview
 
-A compact, dark-themed dashboard providing an overview of your DJ activity.
+A viewport-friendly dashboard with four key metrics:
 
-**Key statistics**
-- Total tracks in your VirtualDJ library
-- Total historical track plays
-- Number of recorded DJ sessions
-- Number of library tracks marked as played
+- Library tracks
+- Historical plays
+- DJ sessions
+- Played library tracks
 
-**Visualizations**
-- **Monthly Playing Activity** — Track plays per month
-- **Top Played Artists** — Most frequently played artists
-- **Playing Hours** — Distribution of track starts across 24 hours
-- **Recent Sessions** — Quick access to your latest DJ sessions
-
-The interface uses a responsive layout with subtle glassmorphism styling, interactive charts, and a minimal dark theme.
+Visualizations include **monthly playing activity** (bar chart), **top played artists**, a **24-hour distribution of track starts**, and **recent sessions** linked to their detail pages.
 
 ### Music Library
 
-Explore your VirtualDJ music collection using searchable and paginated tables.
+Search and explore tracks imported from `database.xml` using a paginated, sortable table with independently scrolling rows and sticky column headings.
 
-Available metadata includes:
+- Artist, title, genre, BPM, key, duration, and VirtualDJ play count
+- First-seen and last-played dates
+- Search across track names, artists, file paths, genres, and remix labels
+- Filters for genre, musical key, minimum/maximum BPM, play status, and last-played date
+- Server-side sorting and pagination across the complete library
 
-- Artist and track title
-- Genre and remix information
-- BPM and musical key
-- Track duration and bitrate
-- First seen and last played timestamps
-- VirtualDJ play counts
-
-Where ID3 metadata is missing, the importer attempts to extract artist and title information from filenames.
+Library play counts and `firstPlay`/`lastPlay` metadata come from the **VirtualDJ library database**; they are distinct from parsed `tracklist.txt` history events.
 
 ### Playing History
 
-Browse historical track plays imported from VirtualDJ's `tracklist.txt`.
+Explore plays imported from VirtualDJ's `History/tracklist.txt`.
 
-- Chronological play history
-- Artist and track information
-- Recorded playback timestamps
-- Total plays and unique track labels
-- Session associations
+- Search artist, title, and original history text
+- Filter by date range and session ID
+- Sort by play timestamp, artist, title, or session date
+- Paginated history table with links to session details
+- Counts of total plays, distinct original track labels, and sessions
 
-History entries are preserved even when they cannot be matched to an existing library track.
+Unmatched historical plays are retained even if no corresponding library track is found.
 
 ### DJ Sessions
 
-Explore individual DJ sessions and their tracklists.
+Browse dated sessions with track counts and recorded start/end timestamps. The session listing supports date-range filtering, minimum-track counts, sorting, and pagination. When history plays are linked to library tracks, session summaries can include matched-track counts and average BPM.
 
-- Session dates and recorded start times
-- Number of tracks per session
-- Chronological tracklists
-- Artist information
-- Session statistics
-- Dedicated session detail pages
+Session detail pages show chronological tracklists, unique artists, library matches, and—when a link exists—library-derived BPM, musical key, and genre.
 
-Sessions spanning midnight are supported.
+Session duration shown as a *span* is the time between the first and last recorded track-start timestamps, not necessarily the full performance duration. History parsing handles plays crossing midnight.
 
-Session time spans are calculated from the first and last recorded track-start timestamps, rather than exact playback durations.
+### Harmonic Wheel
+
+An interactive **24-key Camelot wheel** for exploring library tracks by musical key.
+
+- Click any major (**B**) or minor (**A**) segment to filter the track list
+- Highlight compatible keys: the selected key, its two adjacent Camelot numbers in the same mode, and its relative major/minor
+- Subtle color-coded segment outlines, compatibility legend, and matching key indicators in results
+- Search and sort tracks by artist, BPM, play count, or recent play date
+- Wheel counts and results reflect available keyed library tracks and any configured play-count eligibility rules
+
+For example, selecting **2A** highlights:
+
+- **2A** — Selected key
+- **1A** — Previous compatible key
+- **3A** — Next compatible key
+- **2B** — Relative major
+
+Tracks from all four keys appear together in the results, with subtle colors distinguishing each compatibility relationship.
+
+The wheel uses `tracks.musicalKey` from the library database, **not** inferred keys from unmatched history text.
+
+In the current configured query, tracks must have a non-null/non-empty key and `tracks.playCount > 0`. Additional play-count eligibility controls can be applied in the interface.
+
+The wheel maps supported key spellings, including common enharmonic equivalents, to Camelot notation.
+
+### Synchronization Controls
+
+The sidebar offers **Sync Library** and **Sync History** actions using the existing server routes. Buttons provide loading/error feedback and refresh SvelteKit data after a successful import.
+
+- `POST /api/sync`: Import/update library metadata from `database.xml`
+- `POST /api/sync/history`: Import sessions and plays from `History/tracklist.txt`
+
+Library and history imports are independent.
+
+Matching historical plays to library entries through `plays.trackId` is a separate reconciliation concern; the presence of BPM/key values in session details depends on successful matching.
+
+### User Interface
+
+- Dark navy, subtle glassmorphism design with reusable CSS classes for KPIs, panels, and typography
+- Sidebar navigation for Overview, Library, History, Sessions, and Harmonic Wheel
+- Viewport-contained desktop pages, with internal table/list scrolling and sticky headings/pagination
+- Scroll fallback for smaller displays
+- Compact dashboard components
+- Consistent search, filtering, and sorting controls
+
+Additional theme palettes and a persistent theme selector are an optional enhancement. Full theme-aware styling, particularly chart colors and hardcoded utility colors, may require further work.
 
 ## Technology Stack
 
-| Component | Technology |
+| Area | Technology |
 |---|---|
 | Full-stack framework | SvelteKit |
-| Frontend | Svelte 5 |
+| UI and reactivity | Svelte 5 |
 | Language | TypeScript |
-| Styling | Tailwind CSS |
+| Styling | Tailwind CSS v4 and custom CSS tokens |
 | Charts | Apache ECharts |
 | Database | SQLite |
-| ORM | Drizzle ORM |
-| Database migrations | Drizzle Kit |
-| XML parsing | fast-xml-parser |
+| ORM and migrations | Drizzle ORM / Drizzle Kit |
+| XML ingestion | fast-xml-parser |
 | Runtime | Node.js |
-| Deployment target | Docker Compose |
-
-SvelteKit provides both the frontend and server-side functionality within a single application.
-
-SQLite is an embedded database stored in a local file, eliminating the need for a separate database server.
+| Planned packaging | Docker / Docker Compose |
 
 ## Architecture
 
 ```text
-VirtualDJ
+VirtualDJ installation
 │
 ├── database.xml
+│   └── Library parser
+│       └── tracks
 │
 └── History/
     └── tracklist.txt
-         │
-         ▼
-┌─────────────────────────────┐
-│ SvelteKit                   │
-│                             │
-│  Ingestion Services         │
-│  ├── XML Parser             │
-│  ├── History Parser         │
-│  └── Synchronization        │
-│                             │
-│  Drizzle ORM                │
-│       │                     │
-│       ▼                     │
-│  SQLite Database            │
-│       │                     │
-│       ▼                     │
-│  Server-side Analytics      │
-│       │                     │
-│       ▼                     │
-│  Svelte 5 + ECharts         │
-└─────────────────────────────┘
-         │
-         ▼
-   localhost:5173
+        └── History parser
+            ├── sessions
+            └── plays
+                │
+                └── Optional matching
+                    plays.track_id → tracks.id
+
+                    │
+                    ▼
+             SQLite Database
+                    │
+                    ▼
+           Drizzle ORM Queries
+                    │
+                    ▼
+             SvelteKit Pages
+                    │
+                    ▼
+           Svelte 5 + ECharts
+                    │
+                    ▼
+              localhost:5173
 ```
 
-All VirtualDJ source files are treated as read-only. Imported data is stored separately in SQLite.
+VirtualDJ source files are read, not modified. Imported records are held in a separate local SQLite database.
 
-## Data Sources
-
-### `database.xml`
-
-The VirtualDJ XML database contains music library metadata.
-
-The importer extracts and normalizes:
-
-- File paths and file sizes
-- Artist, title, remix, and genre
-- BPM and musical key
-- Track length and bitrate
-- First seen and last modified timestamps
-- First play, last play, and play count
-
-VirtualDJ stores BPM information as beat intervals in some XML fields. The importer converts these values into BPM while preserving the original values.
-
-### `History/tracklist.txt`
-
-Contains chronological playback history grouped by session dates.
-
-Example:
-
-```text
-VirtualDJ History 2026/06/11
-------------------------------
-23:57 : Artist A - Track A
-23:58 : Artist B - Track B
-00:00 : Artist C - Track C
-```
-
-The importer identifies sessions, parses individual track entries, preserves their sequence, and handles midnight rollover.
-
-Historical plays are currently imported from `tracklist.txt`. M3U history ingestion and cross-source reconciliation are planned improvements.
-
-## Database Model
+## Data Model
 
 The application uses three core SQLite tables.
 
-| Table | Description |
+| Table | Purpose |
 |---|---|
-| `tracks` | Music library metadata imported from `database.xml` |
-| `sessions` | DJ sessions identified from history headers |
-| `plays` | Individual historical track-play events |
+| `tracks` | Library metadata: file path, artist/title, genre, BPM, key, duration, VirtualDJ play count, first/last played, first seen, sync time |
+| `sessions` | Session date, first/last track-start timestamp, source file, and source position |
+| `plays` | Individual history events: timestamp, sequence, original artist/title text, session relationship, optional library `trackId` |
 
-Relationships:
+A session contains many plays.
 
-```text
-tracks
-  │
-  │ 1:N
-  ▼
-plays ───────► sessions
-                  N:1
-```
+A play may optionally reference one library track; unmatched plays are preserved.
 
-A historical play can exist without a matching library track. The original artist, title, and history text are preserved for later reconciliation.
+**Important:** VirtualDJ `tracks.playCount` is not interchangeable with the number of matched `plays` rows.
 
-### Synchronization
-
-Library ingestion uses upserts based on file paths to prevent duplicate library records.
-
-History synchronization replaces records imported from `tracklist.txt` within a database transaction, preventing duplicate plays during repeated imports.
-
-Currently, synchronization is triggered manually through server endpoints.
+The former is library metadata, while the latter represents actual imported historical play records linked to a library track.
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js and npm
-- A local VirtualDJ installation
-- Access to VirtualDJ's `database.xml` and `History` directory
+- A VirtualDJ installation with a readable `database.xml` and `History` folder
+- Filesystem access to those files, including Windows-mounted paths when developing in WSL
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/rubenroelens2402/virtualdj-insights.git
 cd virtualdj-insights
 ```
 
-### 2. Install dependencies
+### 2. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure environment variables
+### 3. Configure Environment Variables
 
 Copy the example environment file:
 
@@ -222,126 +197,83 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-Configure the local paths:
+Configure `.env`:
 
-```env
+```dotenv
 DATABASE_PATH=./data/virtualdj.sqlite
 VIRTUALDJ_PATH=/path/to/VirtualDJ
 ```
 
-For development with WSL, the VirtualDJ path might look like:
+For WSL development, the VirtualDJ path might resemble:
 
-```env
+```dotenv
 VIRTUALDJ_PATH=/mnt/c/Users/YourUser/AppData/Local/VirtualDJ
 ```
 
-The specified directory must contain `database.xml` and the `History` folder.
+The configured directory should contain `database.xml` and the `History` directory.
 
-### 4. Initialize SQLite
-
-Create the database directory:
+### 4. Initialize the Database
 
 ```bash
 mkdir -p data
-```
-
-Apply Drizzle migrations:
-
-```bash
 npx drizzle-kit migrate
 ```
 
-### 5. Start the development server
+### 5. Start the Application
 
 ```bash
 npm run dev
 ```
 
-Open:
+Open **http://localhost:5173**.
 
-**http://localhost:5173**
+### 6. Synchronize Data
 
-### 6. Import the VirtualDJ music library
+Use the two synchronization buttons in the sidebar, or run:
 
 ```bash
+# Import music library
 curl -X POST http://localhost:5173/api/sync
-```
 
-This parses `database.xml` and imports the music library into SQLite.
-
-### 7. Import playing history
-
-```bash
+# Import playing history
 curl -X POST http://localhost:5173/api/sync/history
 ```
 
-This imports historical sessions and individual track plays.
+For key-enriched session data, ensure the optional historical-play matching process has populated valid `plays.trackId` references.
 
-Refresh the dashboard to explore the imported data.
+A conservative matching strategy can link uniquely identified artist/title pairs while leaving ambiguous or missing matches unresolved.
 
-## API Endpoints
+## Application Routes
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/sync` | Synchronize the music library |
-| POST | `/api/sync/history` | Synchronize historical plays and sessions |
+| Route | Description |
+|---|---|
+| `/` | Overview dashboard |
+| `/library` | Searchable, sortable, filterable library |
+| `/history` | Searchable, filterable playing history |
+| `/sessions` | Sessions directory |
+| `/sessions/[id]` | Session detail with tracklist |
+| `/harmonic-wheel` | Interactive Camelot wheel and keyed-track explorer |
+| `POST /api/sync` | Import/synchronize library |
+| `POST /api/sync/history` | Import/synchronize history |
 
-These endpoints are intended for local development. Authentication and synchronization locking should be implemented before exposing the application to other devices or networks.
-
-## Project Structure
-
-```text
-src/
-├── lib/
-│   ├── components/
-│   │   └── charts/
-│   │       └── Chart.svelte
-│   │
-│   └── server/
-│       ├── analytics/
-│       │   └── overview.ts
-│       │
-│       ├── db/
-│       │   ├── index.ts
-│       │   └── schema.ts
-│       │
-│       └── ingestion/
-│           ├── database-parser.ts
-│           ├── history-parser.ts
-│           └── sync-service.ts
-│
-├── routes/
-│   ├── +layout.svelte
-│   ├── +page.svelte
-│   ├── +page.server.ts
-│   │
-│   ├── library/
-│   ├── history/
-│   ├── sessions/
-│   │   └── [id]/
-│   │
-│   └── api/
-│       └── sync/
-│           └── history/
-│
-└── layout.css
-
-drizzle/              # SQL migrations
-data/                 # Local SQLite database (Git-ignored)
-drizzle.config.ts     # Database tooling configuration
-```
-
-## Development Tools
+## Development
 
 ### Drizzle Studio
 
-Inspect the SQLite database using:
+Inspect the local SQLite database:
 
 ```bash
 npx drizzle-kit studio
 ```
 
-### Database migrations
+### Type Checking
+
+```bash
+npx svelte-kit sync
+npx svelte-check --tsconfig ./tsconfig.json
+```
+
+### Database Migrations
 
 After modifying the Drizzle schema:
 
@@ -350,42 +282,100 @@ npx drizzle-kit generate
 npx drizzle-kit migrate
 ```
 
-### Type checking
+### Project Structure
 
-```bash
-npx svelte-kit sync
-npx svelte-check --tsconfig ./tsconfig.json
+```text
+src/
+├── layout.css
+├── lib/
+│   ├── components/
+│   │   └── charts/
+│   │       └── Chart.svelte
+│   └── server/
+│       ├── analytics/
+│       ├── db/
+│       │   ├── index.ts
+│       │   └── schema.ts
+│       └── ingestion/
+│
+└── routes/
+    ├── +layout.svelte
+    ├── +page.svelte
+    ├── +page.server.ts
+    │
+    ├── library/
+    ├── history/
+    ├── sessions/
+    │   └── [id]/
+    ├── harmonic-wheel/
+    │
+    └── api/
+        └── sync/
+            └── history/
+
+drizzle/              # Database migrations
+data/                 # Local SQLite files (Git-ignored)
+drizzle.config.ts      # Database configuration
 ```
 
 ## Roadmap
 
-- [x] SvelteKit application foundation
-- [x] SQLite and Drizzle integration
-- [x] VirtualDJ XML library ingestion
-- [x] Playing history ingestion
+### Implemented / Available
+
+- [x] SvelteKit + Svelte 5 application foundation
+- [x] SQLite and Drizzle schema
+- [x] VirtualDJ library XML ingestion
+- [x] Historical `tracklist.txt` ingestion
 - [x] DJ session parsing
-- [x] Library, History, and Sessions pages
-- [x] Overview dashboard with interactive analytics
-- [x] Compact dark-themed dashboard styling
-- [ ] Activity calendar and weekday/hour heatmap
-- [ ] Historical play-to-library track matching
-- [ ] BPM and musical key progression per session
-- [ ] Advanced date filtering and analytics
-- [ ] Automatic background synchronization
-- [ ] Stable session identifiers across imports
-- [ ] M3U history ingestion and reconciliation
+- [x] Overview analytics with ECharts
+- [x] Library sorting, filters, and pagination
+- [x] History sorting, filters, and pagination
+- [x] Sessions and session detail pages
+- [x] Session-level statistics and optional library enrichment
+- [x] Interactive Camelot wheel
+- [x] Harmonic compatibility highlighting
+- [x] Keyed track discovery and play-count eligibility
+- [x] Sidebar synchronization actions
+- [x] Compact glassmorphism UI and internal scrolling
+
+### Next Major Upgrade — Activity Calendar
+
+Build an interactive activity calendar to explore historical DJ activity by date.
+
+- [ ] GitHub-style calendar heatmap of recorded plays per day
+- [ ] Year selector
+- [ ] Daily tooltips displaying date and track-play count
+- [ ] Select a day to view recorded tracks and associated sessions
+- [ ] Navigate from a selected day to filtered Playing History
+- [ ] Activity statistics: total plays, active days, longest streak, busiest day
+- [ ] Weekday activity distribution
+- [ ] Handle zero-activity dates and leap years
+- [ ] Support sessions spanning midnight
+- [ ] Add a compact activity calendar to the Overview
+
+### Later Improvements
+
+- [ ] Improve and verify history-to-library matching coverage
+- [ ] BPM progression across individual DJ sessions
+- [ ] Musical-key progression and harmonic transitions
+- [ ] More detailed harmonic compatibility analysis
+- [ ] Persistent, fully theme-aware theme selector and ECharts palette
+- [ ] Automatic background synchronization with locking
+- [ ] Stable session identifiers across reimports
+- [ ] M3U history ingestion and cross-source reconciliation
 - [ ] Yearly DJ Wrapped summaries
-- [ ] Single-container Docker deployment
+- [ ] Containerized deployment
 
-## Privacy and Local Data
+## Privacy and Security
 
-VirtualDJ Insights is designed for local use.
+VirtualDJ Insights is intended for local use.
 
 - No cloud database is required.
 - No third-party analytics service is required.
 - VirtualDJ source files are read, not modified.
-- Imported library and playback information remains in the local SQLite database.
-- Database files and local `.env` configuration should not be committed to Git.
+- Imported information remains in the local SQLite database.
+- Local database files and `.env` configuration should not be committed to Git.
+- Sync endpoints should be protected before exposing the application on an untrusted network.
 
 ## License
 
